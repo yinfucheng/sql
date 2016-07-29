@@ -1,0 +1,32 @@
+--生成后缀按天自增的单据编号(每天从001开始)
+create or replace function yfc_djbh_fc(p_tb   in varchar2,
+                                       p_lm   in varchar2,
+                                       p_qz   in varchar2,
+                                       p_rq   in number := 0,
+                                       p_hzcd in number := 3)
+  return varchar2 as
+  v_sql  VARCHAR2(4000);
+  v_djbh varchar2(100);
+  v_num  number;
+  v_rq   varchar2(30);
+  v_qzcd number;
+begin
+  if p_rq = 0 then
+    select to_char(sysdate, 'yyyymmdd') into v_rq from dual;
+  else
+    select to_char(sysdate, 'yymmdd') into v_rq from dual;
+  end if;
+  select length(p_qz) into v_qzcd from dual;
+  v_sql := 'select nvl(max(substr(' || p_lm || ',' || -p_hzcd || ',' ||
+           p_hzcd || ')),0)+1 from ' || p_tb ||
+           ' where to_char(zdrq,''yyyymmdd'')=to_char(sysdate,''yyyymmdd'') 
+           and instr(' || p_lm || ',''' || p_qz || ''')>0';
+  EXECUTE IMMEDIATE v_sql
+    INTO v_num;
+    v_djbh:=p_qz||v_rq||lpad(v_num, p_hzcd, '0');
+
+  return v_djbh;
+EXCEPTION
+  WHEN OTHERS THEN
+    return '生成单号出错';
+end yfc_djbh_fc;
